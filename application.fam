@@ -1,0 +1,11 @@
+App(
+    appid="disney_kyber",
+    name="Disney Kyber",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="disney_kyber_app",
+    cdefines=["APP_DISNEY_KYBER"],
+    requires=["gui"],
+    stack_size=2 * 1024,
+    order=40,
+    fap_category="Tools",
+)
