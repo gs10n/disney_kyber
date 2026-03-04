@@ -27,6 +27,7 @@ typedef struct {
     uint32_t current_words[EM4305_WORDS];
     uint8_t selected_profile;
     uint8_t word_offset;
+    DisneyKyberView current_view;
     char status_line[48];
 } DisneyKyberApp;
 
@@ -68,6 +69,11 @@ static bool disney_kyber_write_words(const uint32_t in_words[EM4305_WORDS]) {
 
 static void disney_kyber_set_status(DisneyKyberApp* app, const char* text) {
     strlcpy(app->status_line, text, sizeof(app->status_line));
+}
+
+static void disney_kyber_switch_view(DisneyKyberApp* app, DisneyKyberView view) {
+    app->current_view = view;
+    view_dispatcher_switch_to_view(app->view_dispatcher, view);
 }
 
 static void disney_kyber_main_draw(Canvas* canvas, void* context) {
@@ -125,7 +131,7 @@ static bool disney_kyber_main_input(InputEvent* event, void* context) {
     }
 
     if(event->key == InputKeyOk) {
-        view_dispatcher_switch_to_view(app->view_dispatcher, DisneyKyberViewSelect);
+        disney_kyber_switch_view(app, DisneyKyberViewSelect);
         return true;
     }
 
@@ -153,7 +159,7 @@ static void disney_kyber_profile_select_cb(void* context, uint32_t index) {
     DisneyKyberApp* app = context;
     app->selected_profile = index;
     disney_kyber_set_status(app, "Profile selected");
-    view_dispatcher_switch_to_view(app->view_dispatcher, DisneyKyberViewMain);
+    disney_kyber_switch_view(app, DisneyKyberViewMain);
 }
 
 static bool disney_kyber_custom_event_cb(void* context, uint32_t event) {
@@ -165,8 +171,8 @@ static bool disney_kyber_custom_event_cb(void* context, uint32_t event) {
 static bool disney_kyber_back_event_cb(void* context) {
     DisneyKyberApp* app = context;
 
-    if(view_dispatcher_get_current_view(app->view_dispatcher) == DisneyKyberViewSelect) {
-        view_dispatcher_switch_to_view(app->view_dispatcher, DisneyKyberViewMain);
+    if(app->current_view == DisneyKyberViewSelect) {
+        disney_kyber_switch_view(app, DisneyKyberViewMain);
         return true;
     }
 
@@ -204,6 +210,7 @@ static DisneyKyberApp* disney_kyber_app_alloc(void) {
     memset(app->current_words, 0, sizeof(app->current_words));
     app->selected_profile = 0;
     app->word_offset = 0;
+    app->current_view = DisneyKyberViewMain;
     disney_kyber_set_status(app, "Ready");
 
     return app;
@@ -224,7 +231,7 @@ int32_t disney_kyber_app(void* p) {
     UNUSED(p);
 
     DisneyKyberApp* app = disney_kyber_app_alloc();
-    view_dispatcher_switch_to_view(app->view_dispatcher, DisneyKyberViewMain);
+    disney_kyber_switch_view(app, DisneyKyberViewMain);
     view_dispatcher_run(app->view_dispatcher);
     disney_kyber_app_free(app);
 
